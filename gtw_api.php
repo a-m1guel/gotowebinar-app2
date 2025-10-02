@@ -1,7 +1,6 @@
 <?php
 // gtw_api.php - Helper functions for GoToWebinar API interaction.
 
-// This function was already here - handles the initial token fetch
 function getGtwAccessToken($auth_code) {
     $url = 'https://api.getgo.com/oauth/v2/token';
     $auth_string = base64_encode(GOTO_CLIENT_ID . ':' . GOTO_CLIENT_SECRET);
@@ -21,13 +20,11 @@ function getGtwAccessToken($auth_code) {
         'Authorization: Basic ' . $auth_string,
         'Content-Type: application/x-www-form-urlencoded'
     ]);
-    // For local development, disable SSL verification. Remove in production.
     curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
     curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, false);
 
     $result = curl_exec($ch);
     if (curl_errno($ch)) {
-        // In a real app, log this error. For now, we'll die.
         error_log('cURL error: ' . curl_error($ch));
         die('cURL error: ' . curl_error($ch));
     }
@@ -35,7 +32,6 @@ function getGtwAccessToken($auth_code) {
 
     $data = json_decode($result, true);
 
-    // Ensure the response contains the access token.
     if (isset($data['access_token'])) {
         return $data;
     }

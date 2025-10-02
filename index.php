@@ -1,23 +1,17 @@
 <?php
-// index.php - Main page to list webinars and manage GoToWebinar connection.
-
-// session_start() must be the very first thing on the page to work correctly.
 session_start();
 
 require 'config.php';
 require 'db.php';
 require 'gtw_api.php';
 
-// Fetch all webinars from the local database
 $stmt = $pdo->query("SELECT id, name, description, event_date, gotowebinar_key FROM webinars ORDER BY event_date DESC");
 $webinars = $stmt->fetchAll();
 
-// Helper function to check if the user is authenticated with GoToWebinar
 function isGtwAuthenticated() {
     return isset($_SESSION['gtw_access_token']) && time() < $_SESSION['gtw_token_expires_at'];
 }
 
-// Helper function to generate the authentication URL
 function getGtwAuthUrl() {
     $params = [
         'client_id' => GOTO_CLIENT_ID,
@@ -54,7 +48,6 @@ function getGtwAuthUrl() {
 <div class="container">
     <h1>Webinar Management System</h1>
 
-    <!-- GoToWebinar Authentication Status Bar -->
     <div class="auth-status">
         <?php if (isGtwAuthenticated()): ?>
             <span><strong>GoToWebinar Status:</strong> <span class="status-synced">Connected</span></span>

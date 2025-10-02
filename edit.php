@@ -16,12 +16,10 @@ if (!$id) {
     exit;
 }
 
-// Check if the user is authenticated with GoToWebinar
 function isGtwAuthenticated() {
     return isset($_SESSION['gtw_access_token']) && time() < $_SESSION['gtw_token_expires_at'];
 }
 
-// Handle form submission
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $name = trim($_POST['name']);
     $description = trim($_POST['description']);
@@ -33,11 +31,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $error = 'All fields are required.';
     } else {
         try {
-            // 1. Update the local database
             $stmt = $pdo->prepare('UPDATE webinars SET name = ?, description = ?, event_date = ? WHERE id = ?');
             $stmt->execute([$name, $description, $event_date_for_db, $id]);
 
-            // 2. If it's a synced webinar and we are authenticated, update it on GoToWebinar
             if (isGtwAuthenticated() && !empty($gotowebinar_key)) {
                 updateGtwWebinar($gotowebinar_key, $name, $description, $event_date_for_db);
             }
@@ -49,13 +45,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
     }
 } else {
-    // Fetch existing webinar data for the form
     $stmt = $pdo->prepare('SELECT * FROM webinars WHERE id = ?');
     $stmt->execute([$id]);
     $webinar = $stmt->fetch();
 
     if (!$webinar) {
-        // If no webinar is found with that ID, redirect
         header('Location: index.php');
         exit;
     }
@@ -108,7 +102,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             </div>
             <div class="form-group">
                 <label for="event_date">Event Date and Time:</label>
-                <!-- Format the date for the datetime-local input value -->
                 <input type="datetime-local" id="event_date" name="event_date" value="<?= date('Y-m-d\TH:i', strtotime($webinar['event_date'])) ?>" required>
             </div>
             <button type="submit" class="button">Update Webinar</button>
