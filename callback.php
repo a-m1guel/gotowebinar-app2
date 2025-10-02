@@ -1,47 +1,40 @@
 <?php
+// callback.php - Handles the redirect back from GoToWebinar after authorization.
+
 session_start();
 require 'config.php';
+require 'gtw_api.php';
 
-$code = $_GET['code'] ?? null;
-
-if (!$code) {
-    die('Error: No authorization code provided.');
-}
-
-$authUrl = 'https://api.getgo.com/oauth/v2/token';
-$postData = http_build_query([
-    'grant_type' => 'authorization_code',
-    'code' => $code,
-    'redirect_uri' => GOTO_REDIRECT_URI
-]);
-
-$authHeader = 'Basic ' . base64_encode(GOTO_CLIENT_ID . ':' . GOTO_CLIENT_SECRET);
-
-$options = [
-    'http' => [
-        'method' => 'POST',
-        'header' => "Content-Type: application/x-www-form-urlencoded\r\n" .
-                    "Authorization: " . $authHeader,
-        'content' => $postData,
-        'ignore_errors' => true
-    ]
-];
-
-$context = stream_context_create($options);
-$response = file_get_contents($authUrl, false, $context);
-$data = json_decode($response, true);
-
-if (isset($data['access_token'])) {
-    $_SESSION['access_token'] = $data['access_token'];
-    $_SESSION['refresh_token'] = $data['refresh_token'];
-    $_SESSION['organizer_key'] = $data['organizer_key'];
-    $_SESSION['expires_in'] = time() + $data['expires_in'];
-
-    header('Location: index.php');
-    exit;
+// Check if GoToWebinar provided an authorization code in the URL
+if (isset($_GET['code'])) {
+    $authCode = $_GET['code'];
+    
+    // Exchange the authorization code for an access token and store the response
+    $tokenData = getGtwAccessToken($authCode);
+    
+    if ($tokenData) {
+        // SUCCESS: The token data was retrieved. Now, save it to the session.
+        
+        // Store the actual token
+        $_SESSION['gtw_access_token'] = $tokenData['access_token'];
+        
+        // Store the organizer key, which is needed for all other API calls
+        $_SESSION['gtw_organizer_key'] = $tokenData['organizer_key'];
+        
+        // Calculate and store the token's expiration time
+        $_SESSION['gtw_token_expires_at'] = time() + $tokenData['expires_in'];
+        
+        // Redirect back to the main page
+        header('Location: index.php');
+        exit;
+    } else {
+        // Handle failure
+        echo "Error: Could not obtain access token. Check your logs and credentials.";
+        exit;
+    }
 } else {
-    echo "Error retrieving access token: <pre>";
-    print_r($data);
-    echo "</pre>";
+    // Handle cases where the 'code' parameter is missing
+    echo "Error: Authorization code not found.";
+    exit;
 }
 ?>
